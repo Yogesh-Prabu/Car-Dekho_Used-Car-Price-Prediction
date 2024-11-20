@@ -1,90 +1,82 @@
 import streamlit as st
-import pandas as pd
+import numpy as np
 import joblib
 
-# Load the trained Gradient Boosting model and necessary encoders
-model = joblib.load('PKL_Files/tuned_gradient_boosting.pkl')
-brand_encoder = joblib.load('PKL_Files/brand.pkl')
-variant_mapping = joblib.load('PKL_Files/variant_name_mapping.pkl')
-model_mapping = joblib.load('PKL_Files/model_mapping.pkl')
-scaler = joblib.load('PKL_Files/scaler.pkl')  # Updated scaler (without 'price')
+# Load the model and preprocessing artifacts
+model = joblib.load('optimized_random_forest_model.pkl')  # Trained model
+columns = joblib.load(r'PKL_Files/model_columns.pkl')  # Model column names
+brand_encoder = joblib.load(r'PKL_Files/brand.pkl')  # Fitted LabelEncoder for brand
+variant_name_mapping = joblib.load(r'PKL_Files/variant_name_mapping.pkl')  # Dictionary for variant name mapping
+model_mapping = joblib.load(r'PKL_Files/model_mapping.pkl')  # Dictionary for model mapping
 
-# Define a function for feature engineering
-def feature_engineering(inputs):
-    inputs['car_age'] = max(2024 - inputs['model_year'], 0)  # Ensure car_age is non-negative
-    inputs['price_per_km'] = inputs['kms_driven'] / 1000 if inputs['kms_driven'] > 0 else 0
-    inputs['high_mileage'] = 1 if inputs['kms_driven'] > 150000 else 0
-    inputs['multiple_owners'] = 1 if inputs['owner_no'] > 1 else 0
-    inputs['mileage_normalized'] = inputs['mileage_kmpl'] / 100
-    brand_popularity_mapping = {0: 0.8, 1: 0.7, 2: 0.6}  # Replace with real mappings
-    inputs['brand_popularity'] = brand_popularity_mapping.get(inputs['brand'], 0.5)
-    # Adjust car_age influence
-    inputs['car_age'] = inputs['car_age'] * 0.5  # Reduce its impact dynamically
-    return inputs
+# Streamlit Application
+st.title("Used Car Price Prediction App")
 
-# Define a function to scale the input features
-def apply_scaling(input_df):
-    columns_to_scale = ['kms_driven', 'engine_cc', 'mileage_kmpl', 
-                        'car_age', 'mileage_normalized', 'brand_popularity', 'price_per_km']
-    input_df[columns_to_scale] = scaler.transform(input_df[columns_to_scale])
-    return input_df
+# User Inputs
+owner_no = st.number_input("Number of Previous Owners", min_value=1, max_value=5, step=1)
+model_year = st.number_input("Year of Manufacture", min_value=2000, max_value=2023, step=1)
+registered_year = st.number_input("Registration Year", min_value=2000, max_value=2023, step=1)
+kms_driven = st.number_input("Kilometers Driven", min_value=0)
+mileage_kmpl = st.number_input("Mileage (kmpl)", min_value=0.0, step=0.1)
+engine_cc = st.number_input("Engine Capacity (cc)", min_value=500, step=50)
+fuel_type = st.selectbox("Fuel Type", ['CNG', 'Diesel', 'LPG', 'Petrol'])
+transmission = st.selectbox("Transmission Type", ['Automatic', 'Manual'])
+city = st.selectbox("City", ['Bangalore', 'Chennai', 'Delhi', 'Hyderabad', 'Jaipur', 'Kolkata'])
 
-# Streamlit app
-def main():
-    st.title("Used Car Price Prediction App")
-    st.write("Enter the car details below to predict the price.")
+# Dropdowns for encoded features
+brand = st.selectbox("Car Brand", list(brand_encoder.classes_))  # Use .classes_ for LabelEncoder
+variant_name = st.selectbox("Variant Name", list(variant_name_mapping.keys()))  # Use .keys() for dictionary
+model_name = st.selectbox("Model Name", list(model_mapping.keys()))  # Use .keys() for dictionary
 
-    # Collect user inputs
-    brand = st.selectbox("Brand", list(brand_encoder.classes_))
-    variant_name = st.selectbox("Variant", list(variant_mapping.keys()))
-    model_name = st.selectbox("Model", list(model_mapping.keys()))
-    owner_no = st.slider("Number of Owners", 1, 10, 1)
-    model_year = st.slider("Model Year", 1990,2024,2020)
-    kms_driven = st.number_input("Kilometers Driven", min_value=0, value=50000)
-    engine_cc = st.number_input("Engine CC", min_value=500, value=1000)
-    mileage_kmpl = st.number_input("Mileage (kmpl)", min_value=5.0, value=15.0)
+# Derived Features
+car_age = model_year - registered_year
+model_age = 2023 - model_year  # Replace 2023 with dynamic year
+registration_lag = registered_year - model_year
+price_per_km = 0 if kms_driven == 0 else 1 / kms_driven
+mileage_normalized = mileage_kmpl / 30  # Normalize using benchmark
+kms_per_year = 0 if car_age == 0 else kms_driven / car_age
+high_mileage = 1 if mileage_kmpl > 20 else 0
+multiple_owners = 1 if owner_no > 1 else 0
+brand_popularity = 0.5  # Placeholder; update if necessary
 
-    city = st.selectbox("City", ['Chennai', 'Delhi', 'Hyderabad', 'Jaipur', 'Kolkata'])
-    transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
-    fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Electric', 'LPG', 'Petrol'])
+# Prepare input array
+input_data = np.zeros(len(columns))
 
-    # Predict button
-    if st.button("Predict Price"):
-        brand_encoded = brand_encoder.transform([brand])[0]
-        variant_encoded = variant_mapping[variant_name]
-        model_encoded = model_mapping[model_name]
+# Map user inputs to model columns
+input_data[columns.index('owner_no')] = owner_no
+input_data[columns.index('model_year')] = model_year
+input_data[columns.index('registered_year')] = registered_year
+input_data[columns.index('kms_driven')] = kms_driven
+input_data[columns.index('mileage_kmpl')] = mileage_kmpl
+input_data[columns.index('engine_cc')] = engine_cc
+input_data[columns.index('car_age')] = car_age
+input_data[columns.index('model_age')] = model_age
+input_data[columns.index('registration_lag')] = registration_lag
+input_data[columns.index('price_per_km')] = price_per_km
+input_data[columns.index('mileage_normalized')] = mileage_normalized
+input_data[columns.index('kms_per_year')] = kms_per_year
+input_data[columns.index('high_mileage')] = high_mileage
+input_data[columns.index('multiple_owners')] = multiple_owners
+input_data[columns.index('brand_popularity')] = brand_popularity
 
-        # Prepare input data
-        input_data = {
-            'brand': brand_encoded,
-            'variant_name_encoded': variant_encoded,
-            'model_encoded': model_encoded,
-            'owner_no': owner_no,
-            'model_year': model_year,
-            'kms_driven': kms_driven,
-            'engine_cc': engine_cc,
-            'mileage_kmpl': mileage_kmpl,
-            'city_chennai': int(city == 'Chennai'),
-            'city_delhi': int(city == 'Delhi'),
-            'city_hyderabad': int(city == 'Hyderabad'),
-            'city_jaipur': int(city == 'Jaipur'),
-            'city_kolkata': int(city == 'Kolkata'),
-            'transmission_manual': int(transmission == 'Manual'),
-            'fuel_type_diesel': int(fuel_type == 'Diesel'),
-            'fuel_type_electric': int(fuel_type == 'Electric'),
-            'fuel_type_lpg': int(fuel_type == 'LPG'),
-            'fuel_type_petrol': int(fuel_type == 'Petrol')
-        }
+# Encode brand using LabelEncoder
+input_data[columns.index('brand_encoded')] = brand_encoder.transform([brand])[0]
 
-        # Apply feature engineering and scaling
-        input_data = feature_engineering(input_data)
-        input_df = pd.DataFrame([input_data])
-        input_df = input_df[model.feature_names_in_]  # Reorder to match model features
-        input_df = apply_scaling(input_df)
+# Encode variant and model using dictionary mappings
+input_data[columns.index('variant_name_encoded')] = variant_name_mapping[variant_name]
+input_data[columns.index('model_encoded')] = model_mapping[model_name]
 
-        # Predict price
-        predicted_price = model.predict(input_df)[0]
-        st.success(f"The predicted price of the car is ₹{predicted_price:.2f}")
+# One-hot encoding for categorical features
+if f'fuel_type_{fuel_type.lower()}' in columns:
+    input_data[columns.index(f'fuel_type_{fuel_type.lower()}')] = 1
 
-if __name__ == '__main__':
-    main()
+if f'transmission_{transmission.lower()}' in columns:
+    input_data[columns.index(f'transmission_{transmission.lower()}')] = 1
+
+if f'city_{city.lower()}' in columns:
+    input_data[columns.index(f'city_{city.lower()}')] = 1
+
+# Prediction
+if st.button("Predict Price"):
+    prediction = model.predict([input_data])
+    st.success(f"Estimated Price: ₹{prediction[0]:,.2f}")
