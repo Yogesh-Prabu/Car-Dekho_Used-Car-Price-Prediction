@@ -2,7 +2,7 @@
 # Car Dekho Price Prediction Project
 
 ## Project Overview
-This project involves developing a predictive model for used car prices based on detailed attributes provided by the CarDekho dataset. The workflow spans from data structuring and cleaning through to feature engineering, preprocessing, visualization, and model training, culminating in a Flask web application for real-time predictions.
+This project involves developing a predictive model for used car prices based on detailed attributes provided by the CarDekho dataset. The workflow spans from data structuring and cleaning through to feature engineering, preprocessing, visualization, and model training, culminating in a Streamlit web application for real-time predictions.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -16,7 +16,7 @@ This project involves developing a predictive model for used car prices based on
 ## Installation
 To set up this project locally, you'll need Python and various libraries. Install them using pip:
 ```bash
-pip install numpy pandas scikit-learn matplotlib seaborn flask
+pip install numpy pandas scikit-learn matplotlib seaborn Streamlit
 ```
 
 ## Usage
@@ -29,7 +29,7 @@ To get started with this project, follow these instructions:
    ```bash
    cd [repository-name]
    ```
-3. Run the Flask application:
+3. Run the Streamlit application:
    ```bash
    python app.py
    ```
@@ -41,7 +41,7 @@ To get started with this project, follow these instructions:
 - **04_preprocessing.ipynb** - Applies preprocessing techniques such as scaling and encoding to make the data suitable for training.
 - **05_Visualizations.ipynb** - Generates insightful visualizations to explore data trends and relationships.
 - **06_model_training.ipynb** - Focuses on training, tuning, and evaluating various machine learning models to find the best predictor for car prices.
-- **app.py** - A Flask application that deploys the trained model to provide an interactive user interface for real-time price prediction.
+- **app.py** - A Streamlit application that deploys the trained model to provide an interactive user interface for real-time price prediction.
 - **optimized_random_forest_model.pkl** - The serialized version of the best-performing model ready for deployment.
 - **PKL_Files/** - Contains additional model files and preprocessing transformers.
 - **Raw_Datasets/** - Directory with the original datasets provided by CarDekho.
@@ -51,7 +51,7 @@ To get started with this project, follow these instructions:
 - **Python**: The primary programming language used.
 - **Jupyter Notebook**: For creating and sharing documents that contain live code, equations, visualizations, and narrative text.
 - **Libraries**: Utilizes Pandas for data manipulation, Scikit-Learn for machine learning, and Matplotlib/Seaborn for plotting.
-- **Flask**: For creating the web application that utilizes our model for predictions.
+- **Streamlit**: For creating the web application that utilizes our model for predictions.
 
 ## Contributing
 Contributions to improve the project are welcome. Please fork the repository and create a pull request, or open an issue with the tags "enhancement" or "bug" to discuss potential changes.
@@ -60,5 +60,5 @@ Contributions to improve the project are welcome. Please fork the repository and
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
 
 ## Acknowledgments
-- Heartfelt thanks to CarDekho for providing the dataset that made this project possible.
+- Heartfelt thanks to Guvi for providing the dataset that made this project possible.
 - Gratitude to all contributors who have participated in this project.
