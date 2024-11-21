@@ -31,7 +31,7 @@ To get started with this project, follow these instructions:
    ```
 3. Run the Streamlit application:
    ```bash
-   python app.py
+   streamlit app.py
    ```
 
 ## Project Structure
